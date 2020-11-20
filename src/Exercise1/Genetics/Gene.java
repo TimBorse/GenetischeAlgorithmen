@@ -1,6 +1,7 @@
 package Exercise1.Genetics;
 
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Gene implements Comparable<Gene> {
 
@@ -11,9 +12,8 @@ public class Gene implements Comparable<Gene> {
     public Gene(int length, double initrate) {
         fitness = 0;
         data = new int[length];
-        Random randomizer = new Random();
         for (int i = 0; i < data.length; i++) {
-            if (randomizer.nextFloat() <= initrate) {
+            if (ThreadLocalRandom.current().nextFloat() <= initrate) {
                 data[i] = 1;
                 fitness++;
             } else {
