@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Scanner;
 
 public class GeneSet {
 
@@ -26,6 +28,7 @@ public class GeneSet {
     private final ReplicationScheme replicationScheme;
     private final CrossOverMethodType crossingOverMethod;
     private final Protection protection;
+    private int rankBasedSelectionParameter_s;
 
     public GeneSet(int genecnt, int genelen, int maxgenerations, double initrate, double acceptRate, int numberOfRuns, ReplicationScheme replicationScheme, CrossOverMethodType crossingOverMethod, Protection protection) {
         this.genecnt = genecnt;
@@ -37,6 +40,15 @@ public class GeneSet {
         this.replicationScheme = replicationScheme;
         this.crossingOverMethod = crossingOverMethod;
         this.protection = protection;
+        if(replicationScheme == ReplicationScheme.RANK_BASED_SELECTION){
+            String s;
+            do {
+                System.out.println("Wählen sie den Parameter s (Natürliche Zahl): ");
+                Scanner sc = new Scanner(System.in);
+                s = sc.next();
+            }while (!s.matches("[0-9]*"));
+            rankBasedSelectionParameter_s = Integer.parseInt(s);
+        }
     }
 
     private int[] runGeneration() throws InterruptedException {
@@ -45,6 +57,7 @@ public class GeneSet {
         int maxValue = 0;
         for (int i = 0; i < numberOfRuns; i++) {
             threads[i] = new RunGenerationsThread(genecnt, genelen, maxgenerations, initrate, acceptRate, pc, pm, crossingOverMethod, replicationScheme, protection);
+            threads[i].setRankBasedSelectionParameter_s(rankBasedSelectionParameter_s);
             threads[i].start();
         }
 
@@ -62,7 +75,7 @@ public class GeneSet {
     }
 
     public void findIdealParameters(double pcStart, double pcEnd, double pcStep, double pmStart, double pmEnd, double pmStep) throws IOException, InterruptedException {
-        FileWriter fileWriter = new FileWriter("resultData.txt");
+        FileWriter fileWriter = new FileWriter("results.txt");
         parameterValues = new ArrayList<>();
         for (double a = pcStart; BigDecimal.valueOf(a).setScale(5, RoundingMode.HALF_UP).doubleValue() <= BigDecimal.valueOf(pcEnd).setScale(5, RoundingMode.HALF_UP).doubleValue(); a += pcStep) {
             pc = BigDecimal.valueOf(a).setScale(5, RoundingMode.HALF_UP).doubleValue();

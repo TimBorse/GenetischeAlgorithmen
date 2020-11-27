@@ -11,7 +11,7 @@ public class Run {
         GeneSet gs;
         long startTime = System.currentTimeMillis();
         try {
-            gs = new GeneSet(200, 200, 3000, 0.05, 1, 10, ReplicationScheme.DOUBLE_BEST_HALF, CrossOverMethodType.RECOMBINATION, Protection.NONE);
+            gs = new GeneSet(200, 200, 3000, 0.05, 1, 10, ReplicationScheme.RANK_BASED_SELECTION, CrossOverMethodType.FRONTREAR, Protection.NONE);
             //gs.printGenerationResult(0.9, 0.006);
             gs.findIdealParameters(0.5, 0.9, 0.02, 0.0, 0.03,0.002);
         }catch (Exception e){

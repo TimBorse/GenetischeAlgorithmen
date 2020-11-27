@@ -6,6 +6,8 @@ import Exercise1.Genetics.Enums.ReplicationScheme;
 import Exercise1.Genetics.Gene;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RunGenerationsThread extends Thread {
@@ -20,6 +22,7 @@ public class RunGenerationsThread extends Thread {
     private final CrossOverMethodType crossingOverMethod;
     private final ReplicationScheme replicationScheme;
     private final Protection protection;
+    private int rankBasedSelectionParameter_s;
 
     public int generationCount;
     public int maxValue;
@@ -37,7 +40,13 @@ public class RunGenerationsThread extends Thread {
         this.crossingOverMethod = crossingOverMethod;
         this.replicationScheme = replicationScheme;
         this.protection = protection;
+        this.rankBasedSelectionParameter_s = 2;
     }
+
+    public void setRankBasedSelectionParameter_s(int s){
+        this.rankBasedSelectionParameter_s = s;
+    }
+
 
     public int getGenerationCount() {
         return generationCount;
@@ -92,8 +101,29 @@ public class RunGenerationsThread extends Thread {
                     int position = ThreadLocalRandom.current().nextInt(0, genes.length);
                     int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
                     int geneIndex2 = ThreadLocalRandom.current().nextInt(0, genes.length);
-                    //crossTwoGenes(genes[geneIndex1], genes[geneIndex2], position);
                     crossTwoGenes(genes[geneIndex1], genes[geneIndex2], position);
+                }
+                break;
+            case TRANSPOSITION:
+                for (int i = 0; i < (genes.length * pc); i++) {
+                    int startPosition = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    int endPosition = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    if (startPosition > endPosition) {
+                        int temp = startPosition;
+                        startPosition = endPosition;
+                        endPosition = temp;
+                    }
+                    int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    int geneIndex2 = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    transposeTwoGenes(genes[geneIndex1], genes[geneIndex2], startPosition, endPosition);
+                }
+                break;
+            case FRONTREAR:
+                for (int i = 0; i < (genes.length * pc); i++) {
+                    int amount = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    int geneIndex2 = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    frontRearTwoGenes(genes[geneIndex1], genes[geneIndex2], amount);
                 }
                 break;
             default:
@@ -102,29 +132,17 @@ public class RunGenerationsThread extends Thread {
 
     }
 
-    private void crossTwoGenesOld(Gene gene1, Gene gene2, int position) {
-        int[] srcData1 = new int[position];
-        System.arraycopy(gene1.getData(), 0, srcData1, 0, position);
-        //Arrays.copyOfRange(gene1.getData(),0,position);
-        int[] srcData2 = new int[position];
-        System.arraycopy(gene2.getData(), 0, srcData2, 0, position);
-        //Arrays.copyOfRange(gene2.getData(), 0, position);
-        for (int i = 0; i < position; i++) {
-            setGenePos(gene1, i, srcData2[i]);
-            setGenePos(gene2, i, srcData1[i]);
-        }
-    }
-
     private void crossTwoGenes(Gene gene1, Gene gene2, int position) {
+        int length = genelen - position;
         int[] tempArr = new int[genelen];
         int[] data1 = gene1.getData();
         int[] data2 = gene2.getData();
-        System.arraycopy(data1, 0, tempArr, 0, genelen);
-        System.arraycopy(data2, 0, data1, 0, position);
-        System.arraycopy(tempArr, 0, data2, 0, position);
+        System.arraycopy(data1, position, tempArr, position, length);
+        System.arraycopy(data2, position, data1, position, length);
+        System.arraycopy(tempArr, position, data2, position, length);
         int fitness1 = 0;
         int fitness2 = 0;
-        for (int i = 0; i < position; i++) {
+        for (int i = position; i < data1.length; i++) {
             if (data1[i] == 1)
                 fitness1++;
             if (data2[i] == 1)
@@ -132,6 +150,35 @@ public class RunGenerationsThread extends Thread {
         }
         gene1.setFitness(gene1.getFitness() + (fitness1 - fitness2));
         gene2.setFitness(gene2.getFitness() + (fitness2 - fitness1));
+    }
+
+    private void transposeTwoGenes(Gene gene1, Gene gene2, int startPosition, int endPosition) {
+        int length = endPosition - startPosition;
+        int[] data1 = gene1.getData();
+        int[] data2 = gene2.getData();
+        int fitnessOld = 0;
+        for (int i = startPosition; i < endPosition; i++) {
+            if (data1[i] == 1)
+                fitnessOld++;
+        }
+        System.arraycopy(data2, startPosition, data1, startPosition, length);
+        int fitnessNew = 0;
+        for (int i = startPosition; i < endPosition; i++) {
+            if (data1[i] == 1)
+                fitnessNew++;
+        }
+        gene1.setFitness(gene1.getFitness() + (fitnessNew - fitnessOld));
+    }
+
+    private void frontRearTwoGenes(Gene gene1, Gene gene2, int amount){
+        int[] tempArr = new int[genelen];
+        int[] data1 = gene1.getData();
+        int[] data2 = gene2.getData();
+        System.arraycopy(data1, 0, tempArr, 0, genelen);
+        System.arraycopy(data2, genelen-amount, data1, 0, amount);
+        System.arraycopy(tempArr, genelen-amount, data2, 0, amount);
+        gene1.setFitness(gene1.fitness());
+        gene2.setFitness(gene2.fitness());
     }
 
     private void replicateGenes(Gene[] genes) {
@@ -146,17 +193,15 @@ public class RunGenerationsThread extends Thread {
                 break;
             case RANK_BASED_SELECTION:
                 int n = genes.length;
-                int s = 2;
-                double decimalN = (double) n;
-                double decimalS = (double) s;
+                int s = rankBasedSelectionParameter_s;
                 double[] psKum = new double[n];
-                double[] randomNumbers = new double[n/2];
+                double[] randomNumbers = new double[n];
                 Gene[] newGenes = new Gene[n];
+                HashMap<Integer, Integer> indexCount = new HashMap<>();
                 for (int r = 0; r < n; r++) {
-                    if(r<n/2)
-                        randomNumbers[r] = ThreadLocalRandom.current().nextDouble();
-                    double decimalR = (double) r;
-                    double ps = ((2 - decimalS) / (decimalN)) + ((2 * decimalR * (decimalS - 1)) / (decimalN * (decimalN - 1)));
+                    indexCount.put(r, 0);
+                    randomNumbers[r] = ThreadLocalRandom.current().nextDouble();
+                    double ps = ((2 - (double) s) / ((double) n)) + ((2 * (double) r * ((double) s - 1)) / ((double) n * ((double) n - 1)));
                     if (r > 0)
                         psKum[r] = psKum[r - 1] + ps;
                     else {
@@ -166,9 +211,13 @@ public class RunGenerationsThread extends Thread {
                 int counter = 0;
                 for (double number : randomNumbers) {
                     int index = getIndex(n / 2, n - 1, 0, number, psKum);
-                    newGenes[counter] = genes[index];
-                    newGenes[counter+1] = genes[index].clone();
-                    counter += 2;
+                    indexCount.replace(index, indexCount.get(index) + 1);
+                    if (indexCount.get(index) > 1) {
+                        newGenes[counter] = genes[index].clone();
+                    } else {
+                        newGenes[counter] = genes[index];
+                    }
+                    counter++;
                 }
                 System.arraycopy(newGenes, 0, genes, 0, n);
                 break;
@@ -176,9 +225,6 @@ public class RunGenerationsThread extends Thread {
                 throw new IllegalArgumentException();
         }
     }
-
-
-
 
 
     private int getIndex(int index, int upperBound, int lowerBound, double number, double[] data) {
@@ -194,7 +240,7 @@ public class RunGenerationsThread extends Thread {
             return getIndex((index - dif), index, lowerBound, number, data);
         } else if (data[index] < number) {
             return getIndex((index + dif), upperBound, index, number, data);
-        }else{
+        } else {
             return index;
         }
 
