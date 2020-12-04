@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Scanner;
 
 public class GeneSet {
@@ -75,7 +76,13 @@ public class GeneSet {
 
     //Tests all Parameters of the given range and writes it to a results file
     public void findIdealParameters(double pcStart, double pcEnd, double pcStep, double pmStart, double pmEnd, double pmStep) throws IOException, InterruptedException {
-        FileWriter fileWriter = new FileWriter("results.txt");
+        Calendar cal = Calendar.getInstance();
+        int year = cal.get(Calendar.YEAR);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        int month = cal.get(Calendar.MONTH)+1;
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+        FileWriter fileWriter = new FileWriter("output/results "+day+"-"+month+"-"+year+" "+hour+"."+minute+".txt");
         parameterValues = new ArrayList<>();
         //Amount of runs required to check each parameter combination
         int requiredRuns = (int) (((pcEnd-pcStart)/pcStep+1)*((pmEnd-pmStart)/pmStep+1));
