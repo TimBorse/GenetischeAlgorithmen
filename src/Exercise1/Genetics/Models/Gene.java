@@ -1,7 +1,5 @@
-package Exercise1.Genetics;
+package Exercise1.Genetics.Models;
 
-import java.util.Arrays;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Gene implements Comparable<Gene> {

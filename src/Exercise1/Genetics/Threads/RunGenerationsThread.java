@@ -3,11 +3,10 @@ package Exercise1.Genetics.Threads;
 import Exercise1.Genetics.Enums.CrossOverMethodType;
 import Exercise1.Genetics.Enums.Protection;
 import Exercise1.Genetics.Enums.ReplicationScheme;
-import Exercise1.Genetics.Gene;
+import Exercise1.Genetics.Models.Gene;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RunGenerationsThread extends Thread {
@@ -64,7 +63,7 @@ public class RunGenerationsThread extends Thread {
             genes[j] = new Gene(genelen, initrate);
         }
 
-        while (genes[genecnt - 1].getFitness() <= (genecnt * acceptRate)) {
+        while (genes[genecnt - 1].getFitness() <= (genelen * acceptRate)) {
             Gene[] selectedGenes;
             switch (protection) {
                 case NONE:
@@ -98,7 +97,7 @@ public class RunGenerationsThread extends Thread {
         switch (crossingOverMethod) {
             case RECOMBINATION:
                 for (int i = 0; i < (genes.length * pc); i++) {
-                    int position = ThreadLocalRandom.current().nextInt(0, genes.length);
+                    int position = ThreadLocalRandom.current().nextInt(0, genelen);
                     int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
                     int geneIndex2 = ThreadLocalRandom.current().nextInt(0, genes.length);
                     crossTwoGenes(genes[geneIndex1], genes[geneIndex2], position);
@@ -262,7 +261,7 @@ public class RunGenerationsThread extends Thread {
 
     private boolean genesReachedDesiredFitness(Gene[] genes) {
         Arrays.sort(genes);
-        if (genes[genecnt - 1].getFitness() >= (genecnt * acceptRate)) {
+        if (genes[genecnt - 1].getFitness() >= (genelen * acceptRate)) {
             if (genes[genecnt - 1].getFitness() > maxValue) {
                 maxValue = genes[genecnt - 1].getFitness();
             }

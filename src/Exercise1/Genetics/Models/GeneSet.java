@@ -1,17 +1,16 @@
-package Exercise1.Genetics;
+package Exercise1.Genetics.Models;
 
 import Exercise1.Genetics.Enums.CrossOverMethodType;
 import Exercise1.Genetics.Enums.Protection;
 import Exercise1.Genetics.Enums.ReplicationScheme;
 import Exercise1.Genetics.Threads.RunGenerationsThread;
+import Exercise1.Run;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.Scanner;
 
 public class GeneSet {
@@ -29,6 +28,8 @@ public class GeneSet {
     private final CrossOverMethodType crossingOverMethod;
     private final Protection protection;
     private int rankBasedSelectionParameter_s;
+    public static int progress = 0;
+    private int[] result;
 
     public GeneSet(int genecnt, int genelen, int maxgenerations, double initrate, double acceptRate, int numberOfRuns, ReplicationScheme replicationScheme, CrossOverMethodType crossingOverMethod, Protection protection) {
         this.genecnt = genecnt;
@@ -49,6 +50,10 @@ public class GeneSet {
             }while (!s.matches("[0-9]*"));
             rankBasedSelectionParameter_s = Integer.parseInt(s);
         }
+    }
+
+    public int[] getResult(){
+        return this.result;
     }
 
     private int[] runGeneration() throws InterruptedException {
@@ -77,11 +82,15 @@ public class GeneSet {
     public void findIdealParameters(double pcStart, double pcEnd, double pcStep, double pmStart, double pmEnd, double pmStep) throws IOException, InterruptedException {
         FileWriter fileWriter = new FileWriter("results.txt");
         parameterValues = new ArrayList<>();
+        int requiredRuns = (int) (((pcEnd-pcStart)/pcStep+1)*((pmEnd-pmStart)/pmStep+1));
         for (double a = pcStart; BigDecimal.valueOf(a).setScale(5, RoundingMode.HALF_UP).doubleValue() <= BigDecimal.valueOf(pcEnd).setScale(5, RoundingMode.HALF_UP).doubleValue(); a += pcStep) {
             pc = BigDecimal.valueOf(a).setScale(5, RoundingMode.HALF_UP).doubleValue();
             for (double j = pmStart; BigDecimal.valueOf(j).setScale(5, RoundingMode.HALF_UP).doubleValue() <= BigDecimal.valueOf(pmEnd).setScale(5, RoundingMode.HALF_UP).doubleValue(); j += pmStep) {
                 pm = BigDecimal.valueOf(j).setScale(5, RoundingMode.HALF_UP).doubleValue();
                 writeFile(fileWriter, pc, pm);
+                progress++;
+                Run.window.setProgressValue((int) ((double)progress/(double)requiredRuns*100d));
+                Run.window.setProgressLabel(progress, requiredRuns);
             }
             try {
                 fileWriter.write("\n");
@@ -98,7 +107,7 @@ public class GeneSet {
     public void printGenerationResult(double pc, double pm) throws InterruptedException {
         this.pc = pc;
         this.pm = pm;
-        int[] result = runGeneration();
+        result = runGeneration();
         System.out.println("Mittel der Generationen: " + result[0]);
         System.out.println("Mutationsrate: " + pm);
         System.out.println("Rekombinationsrate: " + pc);
@@ -107,7 +116,7 @@ public class GeneSet {
         System.out.println("Initiationsrate: " + initrate);
         System.out.println("Crossovermethod: " + crossingOverMethod);
         System.out.println("Replicationscheme: " + replicationScheme);
-        System.out.println("Accepted upper boder: " + (int) (genecnt * acceptRate));
+        System.out.println("Accepted upper boder: " + (int) (genelen * acceptRate));
         System.out.println("Highest value: " + result[1]);
 
 
@@ -140,30 +149,6 @@ public class GeneSet {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-}
-
-class ParameterValue {
-    private double pc;
-    private double pm;
-    private int averageGens;
-
-    public ParameterValue(double pc, double pm, int averageGens) {
-        this.pc = pc;
-        this.pm = pm;
-        this.averageGens = averageGens;
-    }
-
-    public double getPc() {
-        return pc;
-    }
-
-    public double getPm() {
-        return pm;
-    }
-
-    public int getAverageGens() {
-        return averageGens;
     }
 }
 
