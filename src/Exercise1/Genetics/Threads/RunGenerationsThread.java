@@ -1,6 +1,6 @@
 package Exercise1.Genetics.Threads;
 
-import Exercise1.Genetics.Enums.CrossOverMethodType;
+import Exercise1.Genetics.Enums.RecombinationType;
 import Exercise1.Genetics.Enums.Protection;
 import Exercise1.Genetics.Enums.ReplicationScheme;
 import Exercise1.Genetics.Models.Gene;
@@ -18,7 +18,7 @@ public class RunGenerationsThread extends Thread {
     private final double acceptRate;
     private final double pc;
     private final double pm;
-    private final CrossOverMethodType crossingOverMethod;
+    private final RecombinationType crossingOverMethod;
     private final ReplicationScheme replicationScheme;
     private final Protection protection;
     private int rankBasedSelectionParameter_s;
@@ -27,7 +27,7 @@ public class RunGenerationsThread extends Thread {
     public int maxValue;
 
 
-    public RunGenerationsThread(int genecnt, int genelen, int maxgenerations, double initrate, double acceptRate, double pc, double pm, CrossOverMethodType crossingOverMethod, ReplicationScheme replicationScheme, Protection protection) {
+    public RunGenerationsThread(int genecnt, int genelen, int maxgenerations, double initrate, double acceptRate, double pc, double pm, RecombinationType crossingOverMethod, ReplicationScheme replicationScheme, Protection protection) {
         super();
         this.genecnt = genecnt;
         this.genelen = genelen;
@@ -59,10 +59,12 @@ public class RunGenerationsThread extends Thread {
     public void run() {
         Gene[] genes = new Gene[genecnt];
         maxValue = 0;
+        //Initializes new genes
         for (int j = 0; j < genecnt; j++) {
             genes[j] = new Gene(genelen, initrate);
         }
 
+        //Standard procedure of the simulation
         while (genes[genecnt - 1].getFitness() <= (genelen * acceptRate)) {
             Gene[] selectedGenes;
             switch (protection) {
@@ -95,7 +97,7 @@ public class RunGenerationsThread extends Thread {
 
     private void crossOver(Gene[] genes, double pc) {
         switch (crossingOverMethod) {
-            case RECOMBINATION:
+            case CROSSOVER:
                 for (int i = 0; i < (genes.length * pc); i++) {
                     int position = ThreadLocalRandom.current().nextInt(0, genelen);
                     int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
@@ -131,6 +133,7 @@ public class RunGenerationsThread extends Thread {
 
     }
 
+    //Takes 2 Genes and switches the values from the position to the end of the data array with the other Gene
     private void crossTwoGenes(Gene gene1, Gene gene2, int position) {
         int length = genelen - position;
         int[] tempArr = new int[genelen];
@@ -139,6 +142,8 @@ public class RunGenerationsThread extends Thread {
         System.arraycopy(data1, position, tempArr, position, length);
         System.arraycopy(data2, position, data1, position, length);
         System.arraycopy(tempArr, position, data2, position, length);
+
+        //Calculates and updates the fitness of the genes
         int fitness1 = 0;
         int fitness2 = 0;
         for (int i = position; i < data1.length; i++) {
@@ -151,6 +156,7 @@ public class RunGenerationsThread extends Thread {
         gene2.setFitness(gene2.getFitness() + (fitness2 - fitness1));
     }
 
+    //Same as crossTwoGenes except that this method switches the values from a start position to a end position with the other gene
     private void transposeTwoGenes(Gene gene1, Gene gene2, int startPosition, int endPosition) {
         int length = endPosition - startPosition;
         int[] data1 = gene1.getData();
@@ -169,6 +175,7 @@ public class RunGenerationsThread extends Thread {
         gene1.setFitness(gene1.getFitness() + (fitnessNew - fitnessOld));
     }
 
+    //Puts the data of the end of one gene to the beginning of the other gene for both genes
     private void frontRearTwoGenes(Gene gene1, Gene gene2, int amount){
         int[] tempArr = new int[genelen];
         int[] data1 = gene1.getData();
@@ -196,7 +203,11 @@ public class RunGenerationsThread extends Thread {
                 double[] psKum = new double[n];
                 double[] randomNumbers = new double[n];
                 Gene[] newGenes = new Gene[n];
+
+                //Map to save whether a index has been used already to declare if it has to be cloned
                 HashMap<Integer, Integer> indexCount = new HashMap<>();
+
+                //Calculates psKum
                 for (int r = 0; r < n; r++) {
                     indexCount.put(r, 0);
                     randomNumbers[r] = ThreadLocalRandom.current().nextDouble();
@@ -208,6 +219,8 @@ public class RunGenerationsThread extends Thread {
                     }
                 }
                 int counter = 0;
+
+                //Duplicates the genes belonging to the generated random values
                 for (double number : randomNumbers) {
                     int index = getIndex(n / 2, n - 1, 0, number, psKum);
                     indexCount.replace(index, indexCount.get(index) + 1);
@@ -226,8 +239,8 @@ public class RunGenerationsThread extends Thread {
     }
 
 
+    //Efficient search algorithm to find the index of a the first higher value then the number
     private int getIndex(int index, int upperBound, int lowerBound, double number, double[] data) {
-
         if (index == upperBound)
             return index;
         int dif = (upperBound - lowerBound) / 4;
@@ -259,6 +272,7 @@ public class RunGenerationsThread extends Thread {
         gene.setPos(pos, value);
     }
 
+    //Checks if a gene has reached the desired fitness
     private boolean genesReachedDesiredFitness(Gene[] genes) {
         Arrays.sort(genes);
         if (genes[genecnt - 1].getFitness() >= (genelen * acceptRate)) {

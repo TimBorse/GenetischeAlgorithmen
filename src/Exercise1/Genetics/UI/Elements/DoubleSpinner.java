@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.text.DecimalFormat;
 
+//A Spinner working with double values
 public class DoubleSpinner extends JSpinner {
 
     private static final long serialVersionUID = 1L;

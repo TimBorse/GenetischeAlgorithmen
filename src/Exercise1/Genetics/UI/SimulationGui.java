@@ -1,6 +1,6 @@
 package Exercise1.Genetics.UI;
 
-import Exercise1.Genetics.Enums.CrossOverMethodType;
+import Exercise1.Genetics.Enums.RecombinationType;
 import Exercise1.Genetics.Enums.Protection;
 import Exercise1.Genetics.Enums.ReplicationScheme;
 import Exercise1.Genetics.Models.GeneSet;
@@ -23,7 +23,7 @@ public class SimulationGui extends JFrame {
     private JSlider initRateSlider;
     private JSlider numOfRunsSlider;
     private JComboBox<ReplicationScheme> replicationSchemes;
-    private JComboBox<CrossOverMethodType> recombinationType;
+    private JComboBox<RecombinationType> recombinationType;
     private JComboBox<Protection> protections;
     private JSlider pmSlider;
     private JSlider pcSlider;
@@ -44,6 +44,7 @@ public class SimulationGui extends JFrame {
     private JLabel resultLabel3;
     private JLabel resultLabel4;
     private JLabel resultLabel5;
+    private JSpinner spinnerS;
 
     private int genecnt;
     private int genelen;
@@ -53,10 +54,9 @@ public class SimulationGui extends JFrame {
     private int numberOfRuns;
     private double pc;
     private double pm;
-    private CrossOverMethodType crossingOverMethod;
+    private RecombinationType crossingOverMethod;
     private ReplicationScheme replicationScheme;
     private Protection protection;
-    private int rankBasedSelectionParameter_s;
     double pcStartValue;
     double pcEndValue;
     double pcStepValue;
@@ -70,6 +70,8 @@ public class SimulationGui extends JFrame {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setContentPane(genetischeAlgorithmen);
         this.pack();
+        spinnerS.setVisible(false);
+        spinnerS.setValue(2);
         initRateValue.setText(5 + "%");
         addChangeListenerToSlider(gencntSlider, gencntValue);
         addChangeListenerToSlider(genlenSlider, genlenValue);
@@ -85,15 +87,16 @@ public class SimulationGui extends JFrame {
         pmEnd.setValue(0.03);
         pmStep.setValue(0.002);
         ReplicationScheme[] replicationSchemesArr = ReplicationScheme.class.getEnumConstants();
-        CrossOverMethodType[] recombinationTypesArr = CrossOverMethodType.class.getEnumConstants();
+        RecombinationType[] recombinationTypesArr = RecombinationType.class.getEnumConstants();
         Protection[] protectionsArr = Protection.class.getEnumConstants();
         for (ReplicationScheme scheme : replicationSchemesArr)
             replicationSchemes.addItem(scheme);
-        for (CrossOverMethodType type : recombinationTypesArr)
+        for (RecombinationType type : recombinationTypesArr)
             recombinationType.addItem(type);
         for (Protection protection : protectionsArr)
             protections.addItem(protection);
 
+        replicationSchemes.addItemListener(e -> spinnerS.setVisible(replicationSchemes.getSelectedItem() == ReplicationScheme.RANK_BASED_SELECTION));
         runSimulationButton.addActionListener(e -> {
             clearResults();
             progressBar.setValue(0);
@@ -101,17 +104,18 @@ public class SimulationGui extends JFrame {
             progressBar.setStringPainted(true);
             readData();
             GeneSet gs = new GeneSet(genecnt, genelen, maxgenerations, initrate, acceptRate, numberOfRuns, replicationScheme, crossingOverMethod, protection);
+            gs.setRankBasedSelectionParameter_s((int) spinnerS.getValue());
             try {
                 long startTime = System.currentTimeMillis();
-                gs.printGenerationResult(pc,pm);
+                gs.runSimulation(pc, pm);
                 long endTime = System.currentTimeMillis();
                 progressBar.setString("Complete");
                 progressBar.setValue(100);
                 int[] result = gs.getResult();
                 resultLabel1.setText("Result:");
-                resultLabel2.setText("Average Generations: "+ result[0]);
-                resultLabel3.setText("Highest Value: "+ result[1]);
-                resultLabel4.setText("Time: "+ (int)((endTime-startTime)/1000/60)+":"+(int)((endTime-startTime)/1000%60));
+                resultLabel2.setText("Average Generations: " + result[0]);
+                resultLabel3.setText("Highest Value: " + result[1]);
+                resultLabel4.setText("Time: " + (int) ((endTime - startTime) / 1000 / 60) + ":" + (int) ((endTime - startTime) / 1000 % 60));
             } catch (InterruptedException interruptedException) {
                 interruptedException.printStackTrace();
             }
@@ -122,6 +126,7 @@ public class SimulationGui extends JFrame {
             progressBar.setStringPainted(false);
             GeneSet.progress = 0;
             GeneSet gs = new GeneSet(genecnt, genelen, maxgenerations, initrate, acceptRate, numberOfRuns, replicationScheme, crossingOverMethod, protection);
+            gs.setRankBasedSelectionParameter_s((int) spinnerS.getValue());
             SwingWorker worker = new SwingWorker() {
                 @Override
                 protected Object doInBackground() throws Exception {
@@ -130,10 +135,10 @@ public class SimulationGui extends JFrame {
                     long endTime = System.currentTimeMillis();
                     ParameterValue bestParams = gs.getBestParameters();
                     resultLabel1.setText("The best found Parameters are:");
-                    resultLabel2.setText("Mutation Rate: "+ bestParams.getPm());
-                    resultLabel3.setText("Recombination Rate: "+ bestParams.getPc());
+                    resultLabel2.setText("Mutation Rate: " + bestParams.getPm());
+                    resultLabel3.setText("Recombination Rate: " + bestParams.getPc());
                     resultLabel4.setText("Average Generations: " + bestParams.getAverageGens());
-                    resultLabel5.setText("Time: "+ (int)((endTime-startTime)/1000/60)+":"+(int)((endTime-startTime)/1000%60));
+                    resultLabel5.setText("Time: " + (int) ((endTime - startTime) / 1000 / 60) + ":" + (int) ((endTime - startTime) / 1000 % 60));
                     return null;
                 }
             };
@@ -142,7 +147,7 @@ public class SimulationGui extends JFrame {
 
     }
 
-    private void clearResults(){
+    private void clearResults() {
         resultLabel5.setText("");
         resultLabel4.setText("");
         resultLabel3.setText("");
@@ -154,11 +159,11 @@ public class SimulationGui extends JFrame {
         this.genecnt = Integer.parseInt(gencntValue.getText());
         this.genelen = Integer.parseInt(genlenValue.getText());
         this.maxgenerations = Integer.parseInt(maxGenValue.getText());
-        this.pc = Double.parseDouble(pcValue.getText().replace("%", ""))/100d;
-        this.pm = Double.parseDouble(pmValue.getText().replace("%", ""))/100d;
+        this.pc = Double.parseDouble(pcValue.getText().replace("%", "")) / 100d;
+        this.pm = Double.parseDouble(pmValue.getText().replace("%", "")) / 100d;
         this.acceptRate = 1;
-        this.initrate = Double.parseDouble(initRateValue.getText().replace("%",""))/100d;
-        this.crossingOverMethod = (CrossOverMethodType) recombinationType.getSelectedItem();
+        this.initrate = Double.parseDouble(initRateValue.getText().replace("%", "")) / 100d;
+        this.crossingOverMethod = (RecombinationType) recombinationType.getSelectedItem();
         this.replicationScheme = (ReplicationScheme) replicationSchemes.getSelectedItem();
         this.protection = (Protection) protections.getSelectedItem();
         this.numberOfRuns = Integer.parseInt(numOfRunsValue.getText());
@@ -194,12 +199,12 @@ public class SimulationGui extends JFrame {
 
     }
 
-    public void setProgressValue(int value){
+    public void setProgressValue(int value) {
         this.progressBar.setValue(value);
     }
 
-    public void setProgressLabel(int progress, int amount){
-        progressLabel.setText(progress + "/"+ amount + " Parameters tested ("+(int) ((double)progress/(double)amount*100d) + "%)");
+    public void setProgressLabel(int progress, int amount) {
+        progressLabel.setText(progress + "/" + amount + " Parameters tested (" + (int) ((double) progress / (double) amount * 100d) + "%)");
     }
-
 }
+

@@ -1,5 +1,6 @@
 package Exercise1.Genetics.Models;
 
+//Object to store average needed generation for each parameter
 public class ParameterValue {
     private final double pc;
     private final double pm;
