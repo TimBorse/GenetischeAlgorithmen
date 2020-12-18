@@ -25,7 +25,6 @@ public class Gene implements Comparable<Gene> {
                 data[i] = 0;
             }
         }
-
     }
 
     /**
