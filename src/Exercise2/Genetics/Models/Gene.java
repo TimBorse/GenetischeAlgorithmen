@@ -25,7 +25,12 @@ public class Gene implements Comparable<Gene> {
             data[i] = remainingCities.get(randomIndex);
             remainingCities.remove(randomIndex);
         }
-        fitness();
+        calculateFitness();
+    }
+
+    public Gene(int[] data){
+        this.data = data;
+        calculateFitness();
     }
 
     /**
@@ -56,8 +61,8 @@ public class Gene implements Comparable<Gene> {
      *  (-1 means to invert the current value)
      */
     public void setPos(int pos, int value) {
-        //ToDo: Anpassen
         data[pos] = value;
+        calculateFitness();
     }
 
 
@@ -72,7 +77,7 @@ public class Gene implements Comparable<Gene> {
     /**
      * Recalculates the current fitness value
      */
-    public double fitness() {
+    public double calculateFitness() {
         double fitness = 0d;
         for(int i = 0; i< data.length-1; i++){
             // -1 because index starts at 0 and not at 1
@@ -81,6 +86,7 @@ public class Gene implements Comparable<Gene> {
             fitness += GeneSet.distanceMap[from][to];
         }
         fitness += GeneSet.distanceMap[data[data.length-1]-1][data[0]-1];
+        setFitness(fitness);
         return fitness;
     }
 
@@ -88,12 +94,18 @@ public class Gene implements Comparable<Gene> {
         return data;
     }
 
+    public void setData(int[] data) {
+        this.data = data;
+        calculateFitness();
+    }
+
     /**
      *  Comparator for gene
      */
     @Override
     public int compareTo(Gene gene) {
-        setFitness(fitness());
+        calculateFitness();
+        gene.calculateFitness();
         return Double.compare(fitness, gene.getFitness());
     }
 }
