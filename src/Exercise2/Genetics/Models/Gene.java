@@ -15,7 +15,7 @@ public class Gene implements Comparable<Gene> {
      */
     public Gene(int cityCount) {
         data = new int[cityCount];
-        ArrayList<Integer> remainingCities = new ArrayList<Integer>();
+        ArrayList<Integer> remainingCities = new ArrayList<>();
         for(int i=1; i<=cityCount; i++){
             remainingCities.add(i);
         }
@@ -77,7 +77,7 @@ public class Gene implements Comparable<Gene> {
     /**
      * Recalculates the current fitness value
      */
-    public double calculateFitness() {
+    public void calculateFitness() {
         double fitness = 0d;
         for(int i = 0; i< data.length-1; i++){
             // -1 because index starts at 0 and not at 1
@@ -87,7 +87,6 @@ public class Gene implements Comparable<Gene> {
         }
         fitness += GeneSet.distanceMap[data[data.length-1]-1][data[0]-1];
         setFitness(fitness);
-        return fitness;
     }
 
     public int[] getData() {

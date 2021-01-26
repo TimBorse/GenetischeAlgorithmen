@@ -22,6 +22,7 @@ public class RunGenerationsThread extends Thread {
     private final ReplicationScheme replicationScheme;
     private final Protection protection;
 
+    private ArrayList<Integer> cities;
     public int generationCount;
     public double bestFitness;
 
@@ -65,9 +66,7 @@ public class RunGenerationsThread extends Thread {
                     break;
                 case BEST:
                     selectedGenes = new Gene[genecnt - 1];
-                    for (int i = 0; i < genecnt - 1; i++) {
-                        selectedGenes[i] = genes[i+1];
-                    }
+                    if (genecnt - 1 >= 0) System.arraycopy(genes, 1, selectedGenes, 0, genecnt - 1);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + protection);
@@ -97,79 +96,96 @@ public class RunGenerationsThread extends Thread {
 
     }
 
-    private void crossOver(Gene[] genes, double pc) {
-        switch (crossingOverMethod) {
-            case GREEDY_CROSSOVER:
-                Gene[] oldGenes = new Gene[genes.length];
-                System.arraycopy(genes, 0, oldGenes, 0, genes.length);
-                for (int i = 0; i < (int) (genecnt * pc); i++) {
-                    ArrayList<Integer> usedCities = new ArrayList<>();
-                    ArrayList<Integer> unusedCities = new ArrayList<>();
-                    for (int k = 1; k <= cityCount; k++) {
-                        unusedCities.add(k);
-                    }
-                    int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
-                    int geneIndex2 = ThreadLocalRandom.current().nextInt(0, genes.length);
-                    Gene gene1 = genes[geneIndex1];
-                    Gene gene2 = genes[geneIndex2];
-                    int[] data1 = gene1.getData();
-                    int[] data2 = gene2.getData();
-                    int[] newData = new int[cityCount];
-                    newData[0] = data1[0];
-                    usedCities.add(data1[0]);
-                    unusedCities.remove(unusedCities.indexOf(data1[0]));
-                    for (int j = 0; j < (cityCount - 1); j++) {
-                        int index1 = getIndexOf(data1, newData[j]);
-                        int index2 = getIndexOf(data2, newData[j]);
-                        int nextValue1;
-                        int nextValue2;
-                        if (index1 < cityCount - 1)
-                            nextValue1 = data1[index1 + 1];
-                        else {
-                            nextValue1 = data1[0];
-                        }
-                        if (index2 < cityCount - 1)
-                            nextValue2 = data2[index2 + 1];
-                        else {
-                            nextValue2 = data2[0];
-                        }
-                        double dist1 = GeneSet.distanceMap[data1[index1] - 1][nextValue1 - 1];
-                        double dist2 = GeneSet.distanceMap[data2[index2] - 1][nextValue2 - 1];
-                        if (usedCities.contains(nextValue1) && usedCities.contains(nextValue2)) {
-                            int rdm = ThreadLocalRandom.current().nextInt(unusedCities.size());
-                            newData[j + 1] = unusedCities.get(rdm);
-                            usedCities.add(unusedCities.get(rdm));
-                            unusedCities.remove(rdm);
-                        } else if (usedCities.contains(nextValue1)) {
-                            newData[j + 1] = nextValue2;
-                            usedCities.add(nextValue2);
-                            unusedCities.remove(unusedCities.indexOf(nextValue2));
-                        } else if (usedCities.contains(nextValue2)) {
-                            newData[j + 1] = nextValue1;
-                            usedCities.add(nextValue1);
-                            unusedCities.remove(unusedCities.indexOf(nextValue1));
-                        } else if (dist1 < dist2) {
-                            newData[j + 1] = nextValue1;
-                            usedCities.add(nextValue1);
-                            unusedCities.remove(unusedCities.indexOf(nextValue1));
-                        } else {
-                            newData[j + 1] = nextValue2;
-                            usedCities.add(nextValue2);
-                            unusedCities.remove(unusedCities.indexOf(nextValue2));
-                        }
-                    }
-                    genes[i].setData(newData);
-
-                }
-
-                for (int i = (int) (genecnt * pc); i < genes.length; i++) {
-                    genes[i].setData(oldGenes[(i - (int) (genecnt * pc))].getData());
-                }
-                break;
-            default:
-                throw new IllegalArgumentException();
+    private void initializeCities(){
+        cities = new ArrayList<>();
+        for (int k = 1; k <= cityCount; k++) {
+            cities.add(k);
         }
+    }
 
+    private ArrayList<Integer> getCitiesList(){
+        return (ArrayList<Integer>) cities.clone();
+    }
+
+    private void crossOver(Gene[] genes, double pc) {
+        if (crossingOverMethod == RecombinationType.GREEDY_CROSSOVER || crossingOverMethod == RecombinationType.ADVANCED_GREEDY_CROSSOVER) {
+            initializeCities();
+            Gene[] oldGenes = new Gene[genes.length];
+            System.arraycopy(genes, 0, oldGenes, 0, genes.length);
+            for (int i = 0; i < (int) (genecnt * pc); i++) {
+                ArrayList<Integer> unusedCities = getCitiesList();
+
+                int geneIndex1 = ThreadLocalRandom.current().nextInt(0, genes.length);
+                int geneIndex2 = ThreadLocalRandom.current().nextInt(0, genes.length);
+                int[] data1 = genes[geneIndex1].getData();
+                int[] data2 = genes[geneIndex2].getData();
+                int[] newData = new int[cityCount];
+
+                newData[0] = data1[0];
+                unusedCities.remove((Integer) data1[0]);
+
+                for (int j = 0; j < (cityCount - 1); j++) {
+                    int index1 = getIndexOf(data1, newData[j]);
+                    int index2 = getIndexOf(data2, newData[j]);
+                    int nextValue1;
+                    int nextValue2;
+                    if (index1 < cityCount - 1)
+                        nextValue1 = data1[index1 + 1];
+                    else {
+                        nextValue1 = data1[0];
+                    }
+                    if (index2 < cityCount - 1)
+                        nextValue2 = data2[index2 + 1];
+                    else {
+                        nextValue2 = data2[0];
+                    }
+                    double dist1 = GeneSet.distanceMap[data1[index1] - 1][nextValue1 - 1];
+                    double dist2 = GeneSet.distanceMap[data2[index2] - 1][nextValue2 - 1];
+                    boolean value1IsUsed = !unusedCities.contains(nextValue1);
+                    boolean value2IsUsed = !unusedCities.contains(nextValue2);
+                    if (value1IsUsed && value2IsUsed) {
+                        if (crossingOverMethod == RecombinationType.ADVANCED_GREEDY_CROSSOVER) {
+                            int closestCity = findClosestRemaining(unusedCities, newData[j]);
+                            setNewData(newData, j + 1, closestCity, unusedCities);
+                        } else {
+                            int rdm = ThreadLocalRandom.current().nextInt(unusedCities.size());
+                            setNewData(newData, j + 1, unusedCities.get(rdm), unusedCities);
+                        }
+
+                    } else if (value1IsUsed) {
+                        setNewData(newData, j + 1, nextValue2, unusedCities);
+                    } else if (value2IsUsed) {
+                        setNewData(newData, j + 1, nextValue1, unusedCities);
+                    } else if (dist1 < dist2) {
+                        setNewData(newData, j + 1, nextValue1, unusedCities);
+                    } else {
+                        setNewData(newData, j + 1, nextValue2, unusedCities);
+                    }
+                }
+                genes[i].setData(newData);
+            }
+
+            for (int i = (int) (genecnt * pc); i < genes.length; i++) {
+                int rdm = ThreadLocalRandom.current().nextInt(oldGenes.length);
+                genes[i].setData(oldGenes[rdm].getData());
+            }
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    private int findClosestRemaining(ArrayList<Integer> unusedCities, int value){
+        int bestValue = 0;
+        for(int currentValue : unusedCities){
+            if(bestValue == 0 || GeneSet.distanceMap[bestValue-1][value-1] > GeneSet.distanceMap[currentValue-1][value-1])
+                bestValue = currentValue;
+        }
+        return bestValue;
+    }
+
+    private void setNewData(int[] newData, int index, int value, ArrayList<Integer> unusedCities){
+        newData[index] = value;
+        unusedCities.remove((Integer) value);
     }
 
     private int getIndexOf(int[] data, int value) {
@@ -183,7 +199,7 @@ public class RunGenerationsThread extends Thread {
     private void replicateGenes(Gene[] genes) {
         Arrays.sort(genes);
         switch (replicationScheme) {
-            case DOUBLE_BEST_HALF:
+            case DOUBLE_BEST_TWO:
                 Gene bestGene = genes[0];
                 Gene secondBestGene = genes[1];
                 Gene[] newGenes = new Gene[genecnt];
@@ -193,11 +209,20 @@ public class RunGenerationsThread extends Thread {
                     } else if (i < (genecnt / 2))
                         newGenes[i] = secondBestGene.clone();
                     else {
-                        int randomIndex = ThreadLocalRandom.current().nextInt(genecnt);
-                        newGenes[i] = genes[randomIndex].clone();
+                        int rdm = ThreadLocalRandom.current().nextInt(genes.length);
+                        newGenes[i] = genes[rdm].clone();
                     }
                 }
                 System.arraycopy(newGenes, 0, genes, 0, genecnt);
+                break;
+            case DOUBLE_BEST_HALF:
+                for (int i = 0; i < genecnt; i++) {
+                    if (i < (genecnt / 2)) {
+                        genes[(genecnt / 2) + i] = genes[i].clone();
+                    }
+                }
+                break;
+            case NONE:
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -222,6 +247,8 @@ public class RunGenerationsThread extends Thread {
 
     //Checks if a gene has reached the desired fitness
     private boolean genesReachedDesiredFitness(Gene[] genes) {
+        if(acceptedFitness == 0)
+            return false;
         Arrays.sort(genes);
         if (genes[0].getFitness() < bestFitness) {
             bestFitness = genes[0].getFitness();

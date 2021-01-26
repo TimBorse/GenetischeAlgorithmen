@@ -1,6 +1,7 @@
 package Exercise2.Genetics.Models;
 
-import Exercise1.Genetics.Models.ParameterValue;
+import Exercise2.Genetics.Models.ParameterValue;
+import Exercise2.Run;
 import Exercise2.Genetics.Threads.RunGenerationsThread;
 import Exercise2.Genetics.Enums.Protection;
 import Exercise2.Genetics.Enums.RecombinationType;
@@ -17,6 +18,8 @@ import java.util.Calendar;
 import java.util.Scanner;
 
 public class GeneSet {
+
+    public static int progress = 0;
 
     private ArrayList<ParameterValue> parameterValues;
     private double[] result;
@@ -48,6 +51,10 @@ public class GeneSet {
         this.protection = protection;
         this.mapSize = mapSize;
         generateDistanceMap();
+    }
+
+    public double[] getResult(){
+        return this.result;
     }
 
     private void generateDistanceMap() throws FileNotFoundException {
@@ -111,6 +118,9 @@ public class GeneSet {
             for (double j = pmStart; BigDecimal.valueOf(j).setScale(5, RoundingMode.HALF_UP).doubleValue() <= BigDecimal.valueOf(pmEnd).setScale(5, RoundingMode.HALF_UP).doubleValue(); j += pmStep) {
                 pm = BigDecimal.valueOf(j).setScale(5, RoundingMode.HALF_UP).doubleValue();
                 writeFile(fileWriter, pc, pm);
+                progress++;
+                Run.window.setProgressValue((int) ((double)progress/(double)requiredRuns*100d));
+                Run.window.setProgressLabel(progress, requiredRuns);
             }
             try {
                 fileWriter.write("\n");
@@ -120,6 +130,7 @@ public class GeneSet {
 
         }
         fileWriter.close();
+        System.out.println("Best Parameters:\nPC: "+ getBestParameters().getPc() + "\nPM: "+ getBestParameters().getPm() + "\nAverageGens: " + getBestParameters().getAverageGens());
     }
 
     //Runs Simulation for given pc and pm and writes it to result file
@@ -129,7 +140,10 @@ public class GeneSet {
         parameterValues.add(new ParameterValue(pc, pm, avgRuns));
         try {
             fileWriter.write(pm + "\t" + pc + "\t" + avgRuns + "\n");
-            System.out.println(pm +";" +pc+";"+avgRuns);
+            System.out.println("Average Number of Generations: "+ (int)result[0]);
+            System.out.println("PC: " + pc);
+            System.out.println("PM: " + pm);
+            System.out.println("-------------------------------------------------------------------------------------------------------------------");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -150,7 +164,6 @@ public class GeneSet {
         for (RunGenerationsThread thread : threads) {
             if (thread != null) {
                 thread.join();
-                System.out.println(thread.getGenerationCount());
                 sum += thread.getGenerationCount();
                 if (maxValue < thread.getBestFitness()){
                     maxValue = thread.getBestFitness();
@@ -167,7 +180,7 @@ public class GeneSet {
     public void runSimulation(double pc, double pm) throws InterruptedException, FileNotFoundException {
         this.pc = pc;
         this.pm = pm;
-        result = runGeneration();
+        this.result = runGeneration();
         System.out.println("Average Number of Generations: "+ (int)result[0]);
         System.out.println("Best Fitness: " + result[1]);
         for(int value : path){

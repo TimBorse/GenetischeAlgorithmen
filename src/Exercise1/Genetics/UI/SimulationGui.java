@@ -45,6 +45,7 @@ public class SimulationGui extends JFrame {
     private JLabel resultLabel4;
     private JLabel resultLabel5;
     private JSpinner spinnerS;
+    private DoubleSpinner acceptedFitnessSpinner;
 
     private int genecnt;
     private int genelen;
